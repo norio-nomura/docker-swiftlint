@@ -10,9 +10,9 @@ function add_tag() {
 add_tag latest
 add_tag swift-4
 add_tag swift-4.1
-add_tag swift-4.1.0
+add_tag swift-4.1.1
 add_tag ${SOURCE_BRANCH}
 add_tag ${SOURCE_BRANCH}_swift-4.1
-add_tag ${SOURCE_BRANCH}_swift-4.1.0
+add_tag ${SOURCE_BRANCH}_swift-4.1.1
 
 exit $?
