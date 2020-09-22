@@ -7,12 +7,8 @@ function add_tag() {
   docker push $DOCKER_REPO:$1
 }
 
-add_tag latest
-add_tag swift-5
 add_tag swift-5.2
 add_tag swift-5.2.5
-add_tag ${SOURCE_BRANCH}
-add_tag ${SOURCE_BRANCH}_swift-5
 add_tag ${SOURCE_BRANCH}_swift-5.2
 add_tag ${SOURCE_BRANCH}_swift-5.2.5
 
