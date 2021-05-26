@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+sed -i "s|^ENV SWIFTLINT_REVISION.*$|ENV SWIFTLINT_REVISION=\"${SOURCE_BRANCH}\"|" Dockerfile
+
+exit $?
