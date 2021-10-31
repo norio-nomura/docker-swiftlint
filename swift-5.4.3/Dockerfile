@@ -1,4 +1,4 @@
-ARG IMAGE=swift:5.3.1
+ARG IMAGE=swift:5.4.3
 FROM ${IMAGE} AS builder
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 
@@ -12,7 +12,7 @@ ENV SWIFTLINT_REVISION="master"
 # Install SwiftLint
 RUN git clone --branch $SWIFTLINT_REVISION https://github.com/realm/SwiftLint.git && \
     cd SwiftLint && \
-    swift build --configuration release -Xswiftc -static-stdlib && \
+    swift build --configuration release -Xswiftc -static-stdlib -Xlinker -lCFURLSessionInterface -Xlinker -lCFXMLInterface -Xlinker -lcurl -Xlinker -lxml2 && \
     mv `swift build --configuration release -Xswiftc -static-stdlib --show-bin-path`/swiftlint /usr/bin && \
     cd .. && \
     rm -rf SwiftLint
