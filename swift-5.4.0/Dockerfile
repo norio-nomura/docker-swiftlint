@@ -1,4 +1,4 @@
-ARG IMAGE=norionomura/swift:54
+ARG IMAGE=swift:5.4.0
 FROM ${IMAGE} AS builder
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 
