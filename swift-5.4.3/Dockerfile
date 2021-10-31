@@ -12,7 +12,7 @@ ENV SWIFTLINT_REVISION="master"
 # Install SwiftLint
 RUN git clone --branch $SWIFTLINT_REVISION https://github.com/realm/SwiftLint.git && \
     cd SwiftLint && \
-    swift build --configuration release -Xswiftc -static-stdlib -Xlinker -lCFURLSessionInterface -Xlinker -lcurl && \
+    swift build --configuration release -Xswiftc -static-stdlib -Xlinker -lCFURLSessionInterface -Xlinker -lCFXMLInterface -Xlinker -lcurl && \
     mv `swift build --configuration release -Xswiftc -static-stdlib --show-bin-path`/swiftlint /usr/bin && \
     cd .. && \
     rm -rf SwiftLint
