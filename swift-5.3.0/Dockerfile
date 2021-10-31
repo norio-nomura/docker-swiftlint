@@ -1,4 +1,4 @@
-FROM swift:5.3.0
+FROM norionomura/swift:53
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 
 ENV SWIFTLINT_REVISION="master"
