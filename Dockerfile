@@ -1,5 +1,5 @@
-ARG IMAGE=swift:5.3.1
-FROM ${IMAGE} AS builder
+ARG BUILDER_IMAGE=swift:5.5.1
+FROM ${BUILDER_IMAGE} AS builder
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 
 RUN apt-get update && apt-get install -y \
@@ -12,13 +12,14 @@ ENV SWIFTLINT_REVISION="master"
 # Install SwiftLint
 RUN git clone --branch $SWIFTLINT_REVISION https://github.com/realm/SwiftLint.git && \
     cd SwiftLint && \
-    swift build --configuration release -Xswiftc -static-stdlib && \
+    swift build --configuration release -Xswiftc -static-stdlib -Xlinker -lCFURLSessionInterface -Xlinker -lCFXMLInterface -Xlinker -lcurl -Xlinker -lxml2 && \
     mv `swift build --configuration release -Xswiftc -static-stdlib --show-bin-path`/swiftlint /usr/bin && \
     cd .. && \
     rm -rf SwiftLint
 
 # runtime image
-FROM ${IMAGE}
+ARG RUNTIME_IMAGE=swift:5.5.1
+FROM ${RUNTIME_IMAGE}
 COPY --from=builder /usr/bin/swiftlint /usr/bin
 
 # Print Installed SwiftLint Version
