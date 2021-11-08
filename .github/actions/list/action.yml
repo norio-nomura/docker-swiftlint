@@ -1,0 +1,20 @@
+name: 'list'
+description: 'convert json array to comma separated list'
+inputs:
+  array:
+    description: input json array
+    required: true
+outputs:
+  list:
+    description: "list"
+    value: ${{ steps.process.outputs.list }}
+runs:
+  using: "composite"
+  steps:
+    - id: process
+      run: |
+        list="$(
+          jq -c -n -r --argjson array '${{ inputs.array }}' '$array|join(",")'
+        )"
+        echo "::set-output name=list::${list}"
+      shell: bash

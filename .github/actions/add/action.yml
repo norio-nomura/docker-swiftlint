@@ -1,0 +1,32 @@
+name: 'add'
+description: 'add up to three json arrays'
+inputs:
+  a:
+    description: input a
+    required: false
+    default: '""'
+  b:
+    description: input b
+    required: false
+    default: '""'
+  c:
+    description: input c
+    required: false
+    default: '""'
+outputs:
+  array:
+    description: "array"
+    value: ${{ steps.process.outputs.array }}
+runs:
+  using: "composite"
+  steps:
+    - id: process
+      run: |
+        array="$(
+          jq -c -n --argjson a '${{ inputs.a }}' --argjson b '${{ inputs.b }}' --argjson c '${{ inputs.c }}' '
+            def flatmap: .|flatten|map(select(. != ""));
+            [([$a]|flatmap)[], ([$b]|flatmap)[], ([$c]|flatmap)[]]
+          '
+        )"
+        echo "::set-output name=array::${array}"
+      shell: bash

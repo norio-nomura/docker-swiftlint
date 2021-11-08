@@ -1,0 +1,54 @@
+name: 'tags'
+description: 'Generate tags'
+inputs:
+  repositories:
+    description: input image repositories
+    required: true
+  swift_version:
+    description: input swift version
+    required: true
+  swift_version_aliases:
+    description: input swift version aliases
+    required: true
+  swiftlint_revision:
+    description: input swiftlint revision
+    required: true
+outputs:
+  tags:
+    description: tags
+    value: ${{ steps.repos_and_tags.outputs.product }}
+runs:
+  using: "composite"
+  steps:
+    - id: swift_versions
+      uses: ./.github/actions/add
+      with:
+        a: ${{ inputs.swift_version }}
+        b: ${{ inputs.swift_version_aliases }}
+
+    - id: swift_tags
+      uses: ./.github/actions/product
+      with:
+        a: '"swift-"'
+        b: ${{ steps.swift_versions.outputs.array }}
+
+    - id: producted_tags
+      uses: ./.github/actions/product
+      with:
+        a: ${{ inputs.swiftlint_revision }}
+        b: ${{ steps.swift_tags.outputs.product }}
+        sep: '"_"'
+
+    - id: tags
+      uses: ./.github/actions/add
+      with:
+        a: ${{ inputs.swiftlint_revision }}
+        b: ${{ steps.swift_tags.outputs.product }}
+        c: ${{ steps.producted_tags.outputs.product }}
+
+    - id: repos_and_tags
+      uses: ./.github/actions/product
+      with:
+        a: ${{ inputs.repositories }}
+        b: ${{ steps.tags.outputs.array }}
+        sep: '":"'
