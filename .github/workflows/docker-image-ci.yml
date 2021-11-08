@@ -27,6 +27,7 @@ jobs:
           - swift_version: 5.5.1
             swift_version_aliases: ["5", "5.5"]
     env:
+      LOAD: true
       PUSH: false
       SWIFTLINT_REVISION: master
 
@@ -35,6 +36,7 @@ jobs:
 
     - if: github.event_name == 'create' && github.event.ref_type == 'tag'
       run: |
+        echo "LOAD=false" >> $GITHUB_ENV
         echo "PUSH=true" >> $GITHUB_ENV
         echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
 
@@ -81,7 +83,7 @@ jobs:
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
         context: builder
-        load: true
+        load: ${{ env.LOAD }}
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_builder.outputs.list }}
 
