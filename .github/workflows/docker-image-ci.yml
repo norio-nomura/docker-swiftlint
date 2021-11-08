@@ -79,7 +79,7 @@ jobs:
     - uses: docker/build-push-action@v2
       with:
         build-args: |
-          BUILDER_IMAGE=swift:${{ matrix.swift_version }}
+          BUILDER_IMAGE=swift:5.4
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
         context: builder
