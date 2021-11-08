@@ -1,5 +1,5 @@
-name: 'tags'
-description: 'Generate tags'
+name: 'tags for latest'
+description: 'Generate tags for latest'
 inputs:
   repositories:
     description: input image repositories
@@ -16,7 +16,7 @@ inputs:
 outputs:
   tags:
     description: tags
-    value: ${{ steps.repos_and_tags.outputs.product }}
+    value: ${{ steps.tags_for_latest.outputs.list }}
 runs:
   using: "composite"
   steps:
@@ -52,3 +52,14 @@ runs:
         a: ${{ inputs.repositories }}
         b: ${{ steps.tags.outputs.array }}
         sep: '":"'
+
+    - id: tag_array_for_latest
+      uses: ./.github/actions/add
+      with:
+        a: ${{ inputs.repositories }}
+        b: ${{ steps.repos_and_tags.outputs.product }}
+
+    - id: tags_for_latest
+      uses: ./.github/actions/list
+      with:
+        array: ${{ steps.tag_array_for_latest.outputs.array }}

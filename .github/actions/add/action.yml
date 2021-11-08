@@ -24,7 +24,7 @@ runs:
       run: |
         array="$(
           jq -c -n --argjson a '${{ inputs.a }}' --argjson b '${{ inputs.b }}' --argjson c '${{ inputs.c }}' '
-            def flatmap: .|flatten|map(select(. != ""));
+            def flatmap: .|flatten|map(select(. != "" and . != null));
             [([$a]|flatmap)[], ([$b]|flatmap)[], ([$c]|flatmap)[]]
           '
         )"
