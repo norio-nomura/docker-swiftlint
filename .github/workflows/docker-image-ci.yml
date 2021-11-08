@@ -1,26 +1,160 @@
 name: Docker Image CI
 
 on:
+  create:
   push:
     branches: [master]
     paths: 
+      - '.github/actions/*/action.yml'
       - '.github/workflows/docker-image-ci.yml'
       - '*/Dockerfile'
   pull_request:
     paths:
+      - '.github/actions/*/action.yml'
       - '.github/workflows/docker-image-ci.yml'
       - '*/Dockerfile'
 
+env:
+  CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
+
 jobs:
 
-  build:
+  build-latest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - swift_version: 5.5.1
+            swift_version_aliases: ["5", "5.5"]
+    env:
+      PUSH: false
+      SWIFTLINT_REVISION: master
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - if: github.event_name == 'create' && github.event.ref_type == 'tag'
+      run: |
+        echo "PUSH=true" >> $GITHUB_ENV
+        echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
+
+    - id: repos_and_tags
+      uses: ./.github/actions/tags
+      with:
+        repositories: ${{ env.CONTAINER_REPOSITORIES }}
+        swift_version: ${{ toJSON(matrix.swift_version) }}
+        swift_version_aliases: ${{ toJSON(matrix.swift_version_aliases) }}
+        swiftlint_revision: ${{ toJSON(env.SWIFTLINT_REVISION) }}
+
+    - id: tag_array_for_builder
+      uses: ./.github/actions/add
+      with:
+        a: ${{ env.CONTAINER_REPOSITORIES }}
+        b: ${{ steps.repos_and_tags.outputs.tags }}
+
+    - id: tags_for_builder
+      uses: ./.github/actions/list
+      with:
+        array: ${{ steps.tag_array_for_builder.outputs.array }}
+
+    - run: echo "${{ steps.tags_for_builder.outputs.list }}"
+
+    - uses: docker/setup-buildx-action@v1
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: norionomura
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: docker/build-push-action@v2
+      with:
+        build-args: |
+          BUILDER_IMAGE=swift:${{ matrix.swift_version }}
+          RUNTIME_IMAGE=swift:${{ matrix.swift_version }}
+          SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
+        context: builder
+        load: true
+        push: ${{ env.PUSH }}
+        tags: ${{ steps.tags_for_builder.outputs.list }}
+
+    - run: docker run norionomura/swiftlint:${{ env.SWIFTLINT_REVISION }} cat /usr/bin/swiftlint > swiftlint
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: swiftlint
+        path: swiftlint
+
+  push:
+    needs: build-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        version: [5.3.0, 5.3.1, 5.3.2, 5.3.3, 5.4.0, 5.4.1, 5.4.2, 5.4.3, 5.5.0, 5.5.1]
-    runs-on: ubuntu-latest
+        swift_version: ['5.3.1', '5.3.2', '5.3.3', '5.4.0', '5.4.1', '5.4.2', '5.4.3', '5.5.0']
+        include:
+          - swift_version: '5.3.3'
+            swift_version_aliases: ["5.3"]
+          - swift_version: '5.4.3'
+            swift_version_aliases: ["5.4"]
+    env:
+      PUSH: false
+      SWIFTLINT_REVISION: master
  
     steps:
     - uses: actions/checkout@v1
-    - name: Build the Docker image
-      run: docker build swift-${{ matrix.version }}
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: swiftlint
+        path: copier/swiftlint
+
+    - if: github.event_name == 'create' && github.event.ref_type == 'tag'
+      run: |
+        echo "PUSH=true" >> $GITHUB_ENV
+        echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
+
+    - id: tag_array_for_copier
+      uses: ./.github/actions/tags
+      with:
+        repositories: ${{ env.CONTAINER_REPOSITORIES }}
+        swift_version: ${{ toJSON(matrix.swift_version) }}
+        swift_version_aliases: ${{ toJSON(matrix.swift_version_aliases) }}
+        swiftlint_revision: ${{ toJSON(env.SWIFTLINT_REVISION) }}
+
+    - id: tags_for_copier
+      uses: ./.github/actions/list
+      with:
+        array: ${{ steps.tag_array_for_copier.outputs.tags }}
+
+    - run: echo "${{ steps.tags_for_copier.outputs.list }}"
+
+    - uses: docker/setup-buildx-action@v1
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: norionomura
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: docker/build-push-action@v2
+      with:
+        build-args: |
+          RUNTIME_IMAGE=swift:${{ matrix.swift_version }}
+        context: copier
+        push: ${{ env.PUSH }}
+        tags: ${{ steps.tags_for_copier.outputs.list }}

@@ -1,0 +1,32 @@
+name: 'product'
+description: 'Cartesian product of two json arrays'
+inputs:
+  a:
+    description: input a
+    required: false
+    default: '""'
+  b:
+    description: input b
+    required: false
+    default: '""'
+  sep:
+    description: optional input separator
+    required: false
+    default: '""'
+outputs:
+  product:
+    description: "Cartesian product"
+    value: ${{ steps.process.outputs.product }}
+runs:
+  using: "composite"
+  steps:
+    - id: process
+      run: |
+        product="$(
+          jq -c -n --argjson a '${{ inputs.a }}' --argjson b '${{ inputs.b }}' --argjson sep '${{ inputs.sep }}' '
+            def flatmap: .|flatten|map(select(. != ""));
+            [([$a]|flatmap)[]+$sep+([$b]|flatmap)[]]
+          '
+        )"
+        echo "::set-output name=product::${product}"
+      shell: bash
