@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - swift_version: 5.5.1
+          - swift_version: 5.5.2
             swift_version_aliases: ["5", "5.5"]
     env:
       LOAD: true
@@ -89,7 +89,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.4.0', '5.4.1', '5.4.2', '5.4.3', '5.5.0']
+        swift_version: ['5.4.0', '5.4.1', '5.4.2', '5.4.3', '5.5.0', '5.5.1']
         include:
           - swift_version: '5.4.3'
             swift_version_aliases: ["5.4"]
