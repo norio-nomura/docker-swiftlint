@@ -1,5 +1,5 @@
 # runtime image
-ARG RUNTIME_IMAGE=swift
+ARG RUNTIME_IMAGE=swift:focal
 FROM ${RUNTIME_IMAGE}
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 COPY swiftlint /usr/bin

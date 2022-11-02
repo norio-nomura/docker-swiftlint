@@ -1,5 +1,5 @@
-ARG BUILDER_IMAGE=swift
-ARG RUNTIME_IMAGE=swift
+ARG BUILDER_IMAGE=swift:focal
+ARG RUNTIME_IMAGE=swift:focal
 FROM ${BUILDER_IMAGE} AS builder
 
 RUN apt-get update && apt-get install -y \
