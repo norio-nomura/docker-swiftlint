@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     rm -r /var/lib/apt/lists/*
 
 # Install SwiftLint
-ARG SWIFTLINT_REVISION=master
+ARG SWIFTLINT_REVISION=0.47.0
 RUN git clone --branch ${SWIFTLINT_REVISION} https://github.com/realm/SwiftLint.git && \
     cd SwiftLint && \
     swift build --configuration release -Xswiftc -static-stdlib -Xlinker -lCFURLSessionInterface -Xlinker -lCFXMLInterface -Xlinker -lcurl -Xlinker -lxml2 && \
