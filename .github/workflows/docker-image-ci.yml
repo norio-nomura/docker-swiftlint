@@ -75,6 +75,8 @@ jobs:
         load: ${{ env.LOAD }}
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_latest.outputs.tags }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - run: >
         docker run norionomura/swiftlint:${{ env.SWIFTLINT_REVISION }} tar czO 
@@ -149,3 +151,5 @@ jobs:
         context: copier
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_older.outputs.tags }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
