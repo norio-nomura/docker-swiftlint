@@ -76,12 +76,19 @@ jobs:
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_latest.outputs.tags }}
 
-    - run: docker run norionomura/swiftlint:${{ env.SWIFTLINT_REVISION }} cat /usr/bin/swiftlint > swiftlint
+    - run: >
+        docker run norionomura/swiftlint:${{ env.SWIFTLINT_REVISION }} tar czO 
+        /usr/bin/swiftlint
+        /usr/lib/lib_InternalSwiftSyntaxParser.so
+        /usr/lib/libBlocksRuntime.so
+        /usr/lib/libdispatch.so
+        /usr/lib/libsourcekitdInProc.so
+        > swiftlint_linux.tar.gz
 
     - uses: actions/upload-artifact@v2
       with:
         name: swiftlint
-        path: swiftlint
+        path: swiftlint_linux.tar.gz
 
   push:
     needs: build-latest
@@ -103,7 +110,7 @@ jobs:
     - uses: actions/download-artifact@v2
       with:
         name: swiftlint
-        path: copier/swiftlint
+        path: copier
 
     - if: github.event_name == 'create' && github.event.ref_type == 'tag'
       run: |
