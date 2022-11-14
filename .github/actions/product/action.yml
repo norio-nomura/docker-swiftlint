@@ -28,5 +28,5 @@ runs:
             [([$a]|flatmap)[]+$sep+([$b]|flatmap)[]]
           '
         )"
-        echo "::set-output name=product::${product}"
+        echo "product=${product}" >> $GITHUB_OUTPUT
       shell: bash

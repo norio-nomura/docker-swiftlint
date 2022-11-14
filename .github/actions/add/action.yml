@@ -28,5 +28,5 @@ runs:
             [([$a]|flatmap)[], ([$b]|flatmap)[], ([$c]|flatmap)[]]
           '
         )"
-        echo "::set-output name=array::${array}"
+        echo "array=${array}" >> $GITHUB_OUTPUT
       shell: bash

@@ -16,5 +16,5 @@ runs:
         list="$(
           jq -c -n -r --argjson array '${{ inputs.array }}' '$array|join(",")'
         )"
-        echo "::set-output name=list::${list}"
+        echo "list=${list}" >> $GITHUB_OUTPUT
       shell: bash
