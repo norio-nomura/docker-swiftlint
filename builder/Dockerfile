@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,sharing=locked,t
 # Install SwiftLint
 RUN git clone https://github.com/realm/SwiftLint.git
 WORKDIR /SwiftLint
-ARG SWIFTLINT_REVISION=0.47.0
+ARG SWIFTLINT_REVISION=0.49.0
 RUN git checkout ${SWIFTLINT_REVISION}
 RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/.build \
     <<EOT
