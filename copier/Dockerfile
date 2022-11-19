@@ -1,5 +1,5 @@
 # runtime image
-ARG RUNTIME_IMAGE=swift:focal
+ARG RUNTIME_IMAGE=swift:jammy
 FROM ${RUNTIME_IMAGE}
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,sharing=locked,target=/var/lib/apt \
