@@ -29,7 +29,7 @@ jobs:
     env:
       LOAD: true
       PUSH: false
-      SWIFTLINT_REVISION: 0.50.0
+      SWIFTLINT_REVISION: 0.52.0
 
     steps:
     - uses: actions/checkout@v3
@@ -99,7 +99,7 @@ jobs:
             swift_version_aliases: ["5.7"]
     env:
       PUSH: false
-      SWIFTLINT_REVISION: 0.50.0
+      SWIFTLINT_REVISION: 0.52.0
  
     steps:
     - uses: actions/checkout@v3
