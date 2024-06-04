@@ -17,9 +17,11 @@ ARG SWIFTLINT_REVISION=0.54.0
 ADD https://github.com/realm/SwiftLint.git#${SWIFTLINT_REVISION} /SwiftLint
 WORKDIR /SwiftLint
 RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/.build \
+    swift package resolve --configuration release
+RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/.build \
     <<EOT
 #!/bin/bash -eux
-    SWIFT_FLAGS="--configuration release --static-swift-stdlib"
+    SWIFT_FLAGS="--configuration release --skip-update --static-swift-stdlib"
     swift build ${SWIFT_FLAGS} --product swiftlint
     install -v `swift build ${SWIFT_FLAGS} --show-bin-path`/swiftlint /usr/bin
 EOT
