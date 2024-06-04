@@ -27,7 +27,8 @@ RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/
 EOT
 
 # runtime image
-FROM ${RUNTIME_IMAGE}
+FROM ${RUNTIME_IMAGE} as final
+
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 ARG RUNTIME_IMAGE
