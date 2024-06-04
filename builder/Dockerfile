@@ -46,14 +46,12 @@ RUN --mount=type=bind,target=/builder,from=builder \
     test -d /usr/lib/swift/host || mkdir -p /usr/lib/swift/host && cp -pRv /builder/usr/lib/swift/host/libSwift*.so /usr/lib/swift/host/
     test -d /usr/lib/swift/linux || mkdir -p /usr/lib/swift/linux && cp -pRv /builder/usr/lib/swift/linux/*.so /usr/lib/swift/linux/
 EOT
-COPY <<"EOT" /usr/local/bin/archive-swiftlint-runtime
+COPY --chmod=+x <<"EOT" /usr/local/bin/archive-swiftlint-runtime
 #!/bin/bash -eux
 tar czO \
     /usr/bin/swiftlint \
-    /usr/lib/{libBlocksRuntime,libdispatch,libsourcekitdInProc,libswiftCore}.so \
     /usr/local/bin/archive-swiftlint-runtime
 EOT
-RUN chmod +x /usr/local/bin/archive-swiftlint-runtime
 
 # Print Installed SwiftLint Version
 RUN swiftlint version
