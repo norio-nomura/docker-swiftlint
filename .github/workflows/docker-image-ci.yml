@@ -74,12 +74,12 @@ jobs:
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
         context: builder
-        # load: ${{ env.LOAD }}
-        platforms: linux/amd64,linux/arm64
+        load: ${{ env.LOAD }}
+        # platforms: linux/amd64,linux/arm64
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_latest.outputs.tags }}
-        # cache-from: type=gha
-        # cache-to: type=gha,mode=max
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - run: >
         docker run norionomura/swiftlint:${{ env.SWIFTLINT_REVISION }} 
@@ -153,8 +153,8 @@ jobs:
         build-args: |
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: copier
-        platforms: linux/amd64,linux/arm64
+        # platforms: linux/amd64,linux/arm64
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_older.outputs.tags }}
-        # cache-from: type=gha
-        # cache-to: type=gha,mode=max
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
