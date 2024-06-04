@@ -19,11 +19,7 @@ WORKDIR /SwiftLint
 RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/.build \
     <<EOT
 #!/bin/bash -eux
-    SWIFT_FLAGS="$(
-        echo --configuration release \
-        '-Xswiftc -'{static-stdlib,I.} \
-        '-Xlinker -'{l{CFURLSessionInterface,CFXMLInterface,curl,xml2},fuse-ld=lld,L/usr/lib/swift/linux}
-    )"
+    SWIFT_FLAGS="--configuration release --static-swift-stdlib"
     swift build ${SWIFT_FLAGS} --product swiftlint
     install -v `swift build ${SWIFT_FLAGS} --show-bin-path`/swiftlint /usr/bin
 EOT
