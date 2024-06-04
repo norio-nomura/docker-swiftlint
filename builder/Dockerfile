@@ -9,10 +9,9 @@ RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,sharing=locked,t
     libxml2-dev
 
 # Install SwiftLint
-RUN git clone https://github.com/realm/SwiftLint.git
-WORKDIR /SwiftLint
 ARG SWIFTLINT_REVISION=0.54.0
-RUN git checkout ${SWIFTLINT_REVISION}
+ADD https://github.com/realm/SwiftLint.git#${SWIFTLINT_REVISION} /SwiftLint
+WORKDIR /SwiftLint
 RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/.build \
     <<EOT
 #!/bin/bash -eux
