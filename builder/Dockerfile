@@ -38,10 +38,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=${RUNTIME_IMAGE}-
     libcurl4 \
     libxml2
 COPY --from=builder /usr/bin/swiftlint /usr/bin
-COPY --from=builder /usr/lib/libsourcekitdInProc.so /usr/lib
-COPY --from=builder /usr/lib/swift/linux/libBlocksRuntime.so /usr/lib
-COPY --from=builder /usr/lib/swift/linux/libdispatch.so /usr/lib
-COPY --from=builder /usr/lib/swift/linux/libswiftCore.so /usr/lib
+RUN --mount=type=bind,target=/builder,from=builder \
+    <<EOT
+#!/bin/bash -eux
+    # Copy Swift runtime libraries if not exists
+    test -f /usr/lib/libsourcekitdInProc.so || cp -pv /builder/usr/lib/libsourcekitdInProc.so /usr/lib/
+    test -d /usr/lib/swift/host || mkdir -p /usr/lib/swift/host && cp -pRv /builder/usr/lib/swift/host/libSwift*.so /usr/lib/swift/host/
+    test -d /usr/lib/swift/linux || mkdir -p /usr/lib/swift/linux && cp -pRv /builder/usr/lib/swift/linux/*.so /usr/lib/swift/linux/
+EOT
 COPY <<"EOT" /usr/local/bin/archive-swiftlint-runtime
 #!/bin/bash -eux
 tar czO \
