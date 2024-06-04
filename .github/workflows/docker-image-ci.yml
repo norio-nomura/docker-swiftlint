@@ -24,12 +24,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - swift_version: 5.9.1
-            swift_version_aliases: ["5", "5.9"]
+          - swift_version: 5.10.0
+            swift_version_aliases: ["5", "5.10"]
     env:
       LOAD: true
       PUSH: false
-      SWIFTLINT_REVISION: 0.54.0
+      SWIFTLINT_REVISION: 0.55.0
 
     steps:
     - uses: actions/checkout@v3
@@ -68,7 +68,7 @@ jobs:
     - uses: docker/build-push-action@v3
       with:
         build-args: |
-          BUILDER_IMAGE=swift:5.9.1-jammy
+          BUILDER_IMAGE=swift:5.10.0-jammy
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
         context: builder
@@ -93,10 +93,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.9.0']
+        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2']
+        include:
+          - swift_version: '5.7.3'
+            swift_version_aliases: ["5.7"]
+          - swift_version: '5.8.1'
+            swift_version_aliases: ["5.8"]
+          - swift_version: '5.9.2'
+            swift_version_aliases: ["5.9"]
     env:
       PUSH: false
-      SWIFTLINT_REVISION: 0.54.0
+      SWIFTLINT_REVISION: 0.55.0
  
     steps:
     - uses: actions/checkout@v3

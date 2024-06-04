@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=${BUILDER_IMAGE}-
     libxml2-dev
 
 # Install SwiftLint
-ARG SWIFTLINT_REVISION=0.54.0
+ARG SWIFTLINT_REVISION=0.55.0
 ADD https://github.com/realm/SwiftLint.git#${SWIFTLINT_REVISION} /SwiftLint
 WORKDIR /SwiftLint
 RUN --mount=type=cache,target=/root/.cache --mount=type=cache,target=/SwiftLint/.build \
