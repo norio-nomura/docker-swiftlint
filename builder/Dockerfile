@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 ARG BUILDER_IMAGE=swift:jammy
-ARG RUNTIME_IMAGE=swift:jammy
+ARG RUNTIME_IMAGE=${BUILDER_IMAGE:-swift:jammy}
 FROM ${BUILDER_IMAGE} AS builder
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
