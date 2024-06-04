@@ -3,7 +3,11 @@ ARG BUILDER_IMAGE=swift:jammy
 ARG RUNTIME_IMAGE=swift:jammy
 FROM ${BUILDER_IMAGE} AS builder
 
-RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,sharing=locked,target=/var/lib/apt \
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+ARG BUILDER_IMAGE
+ARG TARGETPLATFORM
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=${BUILDER_IMAGE}-${TARGETPLATFORM} \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked,id=${BUILDER_IMAGE}-${TARGETPLATFORM} \
     apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libxml2-dev
@@ -27,7 +31,11 @@ EOT
 # runtime image
 FROM ${RUNTIME_IMAGE}
 LABEL maintainer "Norio Nomura <norio.nomura@gmail.com>"
-RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,sharing=locked,target=/var/lib/apt \
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+ARG RUNTIME_IMAGE
+ARG TARGETPLATFORM
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=${RUNTIME_IMAGE}-${TARGETPLATFORM} \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked,id=${RUNTIME_IMAGE}-${TARGETPLATFORM} \
     apt-get update && apt-get install -y \
     libcurl4 \
     libxml2
