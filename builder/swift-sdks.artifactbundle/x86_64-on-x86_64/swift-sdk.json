@@ -1,0 +1,13 @@
+{
+    "schemaVersion": "4.0",
+    "targetTriples": {
+        "x86_64-unknown-linux-gnu": {
+            "sdkRootPath": "../x86_64",
+            "swiftResourcesPath": "../x86_64/usr/lib/swift",
+            "swiftStaticResourcesPath": "../x86_64/usr/lib/swift_static",
+            "toolsetPaths": [
+                "toolset.json"
+            ]
+        }
+    }
+}
