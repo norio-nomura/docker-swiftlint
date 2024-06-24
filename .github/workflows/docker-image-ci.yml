@@ -100,8 +100,8 @@ jobs:
 
     - name: archive 
       run: |
-        docker run swiftlint:amd64 archive-swiftlint-runtime > copier/swiftlint_linux_amd64.tar.gz
-        docker run swiftlint:arm64 archive-swiftlint-runtime > copier/swiftlint_linux_arm64.tar.gz
+        docker run --rm swiftlint:amd64 archive-swiftlint-runtime > copier/swiftlint_linux_amd64.tar.gz
+        docker run --rm swiftlint:arm64 archive-swiftlint-runtime > copier/swiftlint_linux_arm64.tar.gz
 
     - name: upload amd64 artifact
       uses: actions/upload-artifact@v4
@@ -127,6 +127,11 @@ jobs:
         tags: ${{ steps.tags_for_latest.outputs.tags }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: test linting
+      run: |
+        echo echo "_ = 0" | docker run --rm swiftlint:amd64 swiftlint --use-stdin
+        echo echo "_ = 0" | docker run --rm swiftlint:arm64 swiftlint --use-stdin
 
   push:
     needs: build-latest
@@ -203,3 +208,10 @@ jobs:
         tags: ${{ steps.tags_for_older.outputs.tags }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: test linting
+      run: |
+        echo echo "_ = 0" | docker run --rm --platform linux/amd64 norionomura/swiftlint:swift-${{ matrix.swift_version }} swiftlint --use-stdin
+        echo echo "_ = 0" | docker run --rm --platform linux/arm64 norionomura/swiftlint:swift-${{ matrix.swift_version }} swiftlint --use-stdin
+  
+  
