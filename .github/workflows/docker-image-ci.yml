@@ -48,7 +48,7 @@ jobs:
 
     - run: echo "${{ steps.tags_for_latest.outputs.tags }}"
 
-    - uses: docker/setup-qemu-action@v3
+    - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
       with:
@@ -174,7 +174,7 @@ jobs:
 
     - run: echo "${{ steps.tags_for_older.outputs.tags }}"
 
-    - uses: docker/setup-qemu-action@v3
+    - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
       with:
