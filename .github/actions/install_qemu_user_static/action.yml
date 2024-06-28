@@ -1,0 +1,27 @@
+name: 'install qemu-user-static'
+description: 'install qemu-user-static'
+inputs:
+  VERSION:
+    description: version of qemu-user-static
+    required: false
+  TARGET_RELEASE:
+    description: target release specifying to apt-get install
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - id: process
+      run: |
+        sudo apt-get update && sudo apt-get install -y qemu-user-static
+        TARGET_RELEASE=${{ inputs.TARGET_RELEASE }}
+        if [ -n "$TARGET_RELEASE" ]; then
+          KEYPATH=/etc/apt/keyrings/archive-key-11.asc
+          sudo curl https://ftp-master.debian.org/keys/archive-key-11.asc -o $KEYPATH
+          echo "deb [signed-by=$KEYPATH] http://deb.debian.org/debian $TARGET_RELEASE main"|sudo tee /etc/apt/sources.list.d/deb-debian-org.list
+        fi
+        sudo apt-get update
+        TARGET_FLAG=${TARGET_RELEASE:+-t $TARGET_RELEASE}
+        VERSION=${{ inputs.VERSION }}
+        VERSION_REQUIREMENT=${VERSION:+=$VERSION}
+        sudo apt-get $TARGET_FLAG install -y qemu-user-static$VERSION_REQUIREMENT
+      shell: bash

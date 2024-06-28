@@ -20,7 +20,7 @@ env:
 jobs:
 
   build-latest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         include:
@@ -48,7 +48,7 @@ jobs:
 
     - run: echo "${{ steps.tags_for_latest.outputs.tags }}"
 
-    - uses: docker/setup-qemu-action@v3
+    - uses: ./.github/actions/install_qemu_user_static
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
       with:
@@ -135,7 +135,7 @@ jobs:
 
   push:
     needs: build-latest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -179,7 +179,7 @@ jobs:
 
     - run: echo "${{ steps.tags_for_older.outputs.tags }}"
 
-    - uses: docker/setup-qemu-action@v3
+    - uses: ./.github/actions/install_qemu_user_static
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
       with:
