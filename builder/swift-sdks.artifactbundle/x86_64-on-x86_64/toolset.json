@@ -1,0 +1,22 @@
+{
+    "cxxCompiler": {
+        "extraCLIOptions": [
+            "-lstdc++"
+        ]
+    },
+    "librarian": {
+        "path": "llvm-ar"
+    },
+    "linker": {
+        "path": "x86_64-linux-gnu-ld.gold",
+        "extraCLIOptions": [
+        ]
+    },
+    "rootPath": "../x86_64/usr/bin",
+    "schemaVersion": "1.0",
+    "swiftCompiler": {
+        "extraCLIOptions": [
+            "-use-ld=gold"
+        ]
+    }
+}

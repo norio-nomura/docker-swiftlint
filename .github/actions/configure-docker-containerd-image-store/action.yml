@@ -1,0 +1,36 @@
+name: 'configure docker containerd image store'
+description: 'configure docker containerd image store'
+inputs:
+  USE_CONTAINERD:
+    description: use containerd as docker image store
+    required: false
+    default: 'false'
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        # enable containerd image store
+        ENABLE_CONTAINERD_IMAGE_STORE=${{ inputs.USE_CONTAINERD }}
+        [ "$ENABLE_CONTAINERD_IMAGE_STORE" != 'false' ] \
+          && ENABLE_CONTAINERD_IMAGE_STORE=true \
+          || ENABLE_CONTAINERD_IMAGE_STORE=false
+
+        # detect current configuration
+        config=/etc/docker/daemon.json
+        current=$((sudo cat "$config" 2>/dev/null || echo "{}")|jq '.features."containerd-snapshotter" // false')
+
+        # update configuration if necessary
+        [ "$current" = "$ENABLE_CONTAINERD_IMAGE_STORE" ] && exit 0
+        jq_expression='.features."containerd-snapshotter" = '$ENABLE_CONTAINERD_IMAGE_STORE
+        tmpfile=$(mktemp) && (sudo cat "$config" 2>/dev/null || echo "{}") | jq "$jq_expression" > "$tmpfile"
+        mkdir -p $(dirname "$config") && (cat "$tmpfile" | sudo tee "$config") && rm "$tmpfile"
+
+        # restart docker
+        sudo systemctl restart docker || sudo journalctl -xeu docker.service
+        echo ---
+        docker info
+        echo ---
+        docker image ls
+        echo ---
+        sudo systemctl status docker
+      shell: bash
