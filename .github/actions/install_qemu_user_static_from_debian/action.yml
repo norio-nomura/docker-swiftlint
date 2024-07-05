@@ -1,0 +1,44 @@
+name: 'install qemu-user-static from debian'
+description: 'install qemu-user-static from debian'
+inputs:
+  VERSION:
+    description: version of qemu-user-static
+    required: false
+  TARGET_RELEASE:
+    default: bookworm
+    description: target release specifying to apt-get install
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - id: process
+      run: |
+        TARGET_RELEASE=${{ inputs.TARGET_RELEASE }}
+        VERSION=${{ inputs.VERSION }}
+
+        # install debian-archive-keyring
+        keyring=/etc/apt/keyrings/debian-archive-keyring.gpg
+        [ -f $keyring ] || curl https://ftp-master.debian.org/keys/archive-key-11.asc -o - | sudo gpg --dearmor -o $keyring
+
+        # add debian sources
+        debian_sources=/etc/apt/sources.list.d/debian-$TARGET_RELEASE.sources
+        [ -f "$debian_sources" ] || sudo tee $debian_sources <<EOF
+        Types: deb
+        URIs: http://deb.debian.org/debian
+        Suites: $TARGET_RELEASE
+        Components: main
+        Signed-By: $keyring
+        EOF
+
+        # pin debian sources
+        debian_pin=/etc/apt/preferences.d/debian-$TARGET_RELEASE-pin
+        [ -f "$debian_pin" ] || sudo tee $debian_pin <<EOF
+        Package: *
+        Pin: release n=$TARGET_RELEASE
+        Pin-Priority: 100
+        EOF
+
+        TARGET_FLAG=${TARGET_RELEASE:+-t $TARGET_RELEASE}
+        VERSION_REQUIREMENT=${VERSION:+=$VERSION}
+        sudo apt-get update && sudo apt-get $TARGET_FLAG install -y qemu-user-static$VERSION_REQUIREMENT
+      shell: bash
