@@ -72,8 +72,9 @@ jobs:
       with:
         build-args: |
           BUILDER_IMAGE=swiftlang/swift:nightly-jammy
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
+          FIX_SWIFTPM_7695=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
+          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: builder
         load: true
         platforms: linux/amd64
@@ -88,8 +89,9 @@ jobs:
         build-args: |
           BUILDER_IMAGE=swiftlang/swift:nightly-jammy
           CROSS_TARGETARCHS=arm64
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
+          FIX_SWIFTPM_7695=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
+          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: builder
         load: true
         platforms: linux/arm64

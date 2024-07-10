@@ -36,6 +36,9 @@ ARG USE_SDK
 # If set, build halt after building SwiftLint for debugging.
 ARG SLEEP
 
+# If set, Avoid link error fixed in https://github.com/apple/swift-package-manager/pull/7695
+ARG FIX_SWIFTPM_7695
+
 ####################################################################################################
 # Internal build arguments
 ####################################################################################################
@@ -201,7 +204,8 @@ ARG SWIFTLINT_REVISION
 ADD --link https://github.com/realm/SwiftLint.git#${SWIFTLINT_REVISION} /SwiftLint
 WORKDIR /SwiftLint
 # Quick fix to avoid link error
-RUN sed -i 's/^swiftLintPluginDependencies = .*$/swiftLintPluginDependencies = []/' Package.swift
+ARG FIX_SWIFTPM_7695
+RUN [ -z "$FIX_SWIFTPM_7695" ] || sed -i 's/^swiftLintPluginDependencies = .*$/swiftLintPluginDependencies = []/' Package.swift
 # Resolve dependencies
 ARG _BUILD_CACHE_ID
 ENV _BUILD_CACHE_ID=${_BUILD_CACHE_ID} BUILD_DIR=/SwiftLint/.build DOT_CACHE=/root/.cache
