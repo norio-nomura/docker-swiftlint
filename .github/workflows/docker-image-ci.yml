@@ -4,7 +4,7 @@ on:
   create:
   push:
     branches: [master]
-    paths: 
+    paths:
       - '.github/actions/*/action.yml'
       - '.github/workflows/docker-image-ci.yml'
       - '*/Dockerfile'
@@ -24,10 +24,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - swift_version: 5.10.0
+          - swift_version: 5.10.1
             swift_version_aliases: ["5", "5.10"]
     env:
-      LOAD: true
       PUSH: false
       SWIFTLINT_REVISION: 0.55.0
 
@@ -36,7 +35,6 @@ jobs:
 
     - if: github.event_name == 'create' && github.event.ref_type == 'tag'
       run: |
-        echo "LOAD=false" >> $GITHUB_ENV
         echo "PUSH=true" >> $GITHUB_ENV
         echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
 
@@ -50,9 +48,11 @@ jobs:
 
     - run: echo "${{ steps.tags_for_latest.outputs.tags }}"
 
-    - uses: docker/setup-qemu-action@v3
+    - uses: ./.github/actions/install_qemu_user_static_from_debian
 
-    - uses: docker/setup-buildx-action@v3
+    - uses: ./.github/actions/configure-docker-containerd-image-store
+      with:
+        USE_CONTAINERD: true
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -67,28 +67,96 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: docker/build-push-action@v5
+    - name: build amd64 architecture
+      uses: docker/build-push-action@v5
       with:
         build-args: |
-          BUILDER_IMAGE=swift:5.10.0-jammy
-          RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
+          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
+          FIX_SWIFTPM_7695=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
+          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: builder
-        load: ${{ env.LOAD }}
-        # platforms: linux/amd64,linux/arm64
+        load: true
+        platforms: linux/amd64
+        push: false
+        tags: swiftlint:amd64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: build arm64 architecture
+      uses: docker/build-push-action@v5
+      with:
+        build-args: |
+          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
+          CROSS_TARGETARCHS=arm64
+          FIX_SWIFTPM_7695=1
+          SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
+          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
+        context: builder
+        load: true
+        platforms: linux/arm64
+        push: false
+        tags: swiftlint:arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: archive
+      run: |
+        docker run swiftlint:amd64 archive-swiftlint-runtime > copier/swiftlint_linux_amd64.tar.gz
+        docker run swiftlint:arm64 archive-swiftlint-runtime > copier/swiftlint_linux_arm64.tar.gz
+
+    - name: upload amd64 artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: swiftlint_amd64
+        path: copier/swiftlint_linux_amd64.tar.gz
+
+    - name: upload arm64 artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: swiftlint_arm64
+        path: copier/swiftlint_linux_arm64.tar.gz
+
+    - name: build multi-arch image
+      uses: docker/build-push-action@v5
+      with:
+        build-args: |
+          RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
+        context: copier
+        load: false
+        platforms: linux/amd64,linux/arm64
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_latest.outputs.tags }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - run: >
-        docker run norionomura/swiftlint:${{ env.SWIFTLINT_REVISION }} 
-        archive-swiftlint-runtime > swiftlint_linux.tar.gz
-
-    - uses: actions/upload-artifact@v4
+    - id: slim_tags
+      uses: ./.github/actions/product
       with:
-        name: swiftlint
-        path: swiftlint_linux.tar.gz
+        a: ${{ env.CONTAINER_REPOSITORIES }}
+        b: "[\"slim\", \"${{ env.SWIFTLINT_REVISION }}-slim\"]"
+        sep: '":"'
+
+    - id: slim_tag_list
+      uses: ./.github/actions/list
+      with:
+        array: ${{ steps.slim_tags.outputs.product }}
+
+    - run: echo "${{ steps.slim_tag_list.outputs.list }}"
+
+    - name: build slim image
+      uses: docker/build-push-action@v5
+      with:
+        build-args: |
+          RUNTIME_IMAGE=ubuntu:jammy
+          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
+        context: copier
+        load: false
+        platforms: linux/amd64,linux/arm64
+        push: ${{ env.PUSH }}
+        tags: ${{ steps.slim_tag_list.outputs.list }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   push:
     needs: build-latest
@@ -96,7 +164,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2']
+        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0']
         include:
           - swift_version: '5.7.3'
             swift_version_aliases: ["5.7"]
@@ -107,13 +175,18 @@ jobs:
     env:
       PUSH: false
       SWIFTLINT_REVISION: 0.55.0
- 
+
     steps:
     - uses: actions/checkout@v4
 
     - uses: actions/download-artifact@v4
       with:
-        name: swiftlint
+        name: swiftlint_amd64
+        path: copier
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: swiftlint_arm64
         path: copier
 
     - if: github.event_name == 'create' && github.event.ref_type == 'tag'
@@ -131,9 +204,11 @@ jobs:
 
     - run: echo "${{ steps.tags_for_older.outputs.tags }}"
 
-    - uses: docker/setup-qemu-action@v3
+    - uses: ./.github/actions/install_qemu_user_static_from_debian
 
-    - uses: docker/setup-buildx-action@v3
+    - uses: ./.github/actions/configure-docker-containerd-image-store
+      with:
+        USE_CONTAINERD: true
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -153,7 +228,7 @@ jobs:
         build-args: |
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: copier
-        # platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64,linux/arm64
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_older.outputs.tags }}
         cache-from: type=gha
