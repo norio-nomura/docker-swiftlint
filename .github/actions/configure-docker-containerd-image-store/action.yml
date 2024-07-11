@@ -4,7 +4,7 @@ inputs:
   USE_CONTAINERD:
     description: use containerd as docker image store
     required: false
-    default: 'false'
+    default: 'true'
 runs:
   using: "composite"
   steps:
