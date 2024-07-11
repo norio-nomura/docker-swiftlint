@@ -20,8 +20,54 @@ env:
   SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.55.0' }}
 
 jobs:
+  build-archs:
+    name: Build ${{ matrix.target_arch }} architecture
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        swift_version: ["5.10.1"]
+        target_arch: ['amd64', 'arm64']
+    env:
+      PLATFORM: linux/${{ matrix.target_arch }}
 
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: ./.github/actions/install_qemu_user_static_from_debian
+
+    - uses: ./.github/actions/configure-docker-containerd-image-store
+      with:
+        USE_CONTAINERD: true
+  
+    - name: build ${{ matrix.target_arch }} architecture
+      uses: docker/build-push-action@v5
+      with:
+        build-args: |
+          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
+          FIX_SWIFTPM_7695=1
+          PREFER_BUILDARCH=1
+          SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
+          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
+        context: builder
+        load: true
+        platforms: ${{ env.PLATFORM }}
+        tags: swiftlint
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: archive
+      run: >
+        docker run --platform $PLATFORM --rm swiftlint archive-swiftlint-runtime 
+        > copier/swiftlint_linux_${{ matrix.target_arch }}.tar.gz
+
+    - name: upload ${{ matrix.target_arch }} artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: swiftlint_${{ matrix.target_arch }}
+        path: copier/swiftlint_linux_${{ matrix.target_arch }}.tar.gz
+  
   build-latest:
+    needs: build-archs
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -61,55 +107,15 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: build amd64 architecture
-      uses: docker/build-push-action@v5
-      with:
-        build-args: |
-          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
-          FIX_SWIFTPM_7695=1
-          SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
-        context: builder
-        load: true
-        platforms: linux/amd64
-        push: false
-        tags: swiftlint:amd64
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: build arm64 architecture
-      uses: docker/build-push-action@v5
-      with:
-        build-args: |
-          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
-          CROSS_TARGETARCHS=arm64
-          FIX_SWIFTPM_7695=1
-          SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
-        context: builder
-        load: true
-        platforms: linux/arm64
-        push: false
-        tags: swiftlint:arm64
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: archive
-      run: |
-        docker run swiftlint:amd64 archive-swiftlint-runtime > copier/swiftlint_linux_amd64.tar.gz
-        docker run swiftlint:arm64 archive-swiftlint-runtime > copier/swiftlint_linux_arm64.tar.gz
-
-    - name: upload amd64 artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/download-artifact@v4
       with:
         name: swiftlint_amd64
-        path: copier/swiftlint_linux_amd64.tar.gz
+        path: copier
 
-    - name: upload arm64 artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/download-artifact@v4
       with:
         name: swiftlint_arm64
-        path: copier/swiftlint_linux_arm64.tar.gz
+        path: copier
 
     - name: build multi-arch image
       uses: docker/build-push-action@v5
@@ -117,7 +123,6 @@ jobs:
         build-args: |
           RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: copier
-        load: false
         platforms: linux/amd64,linux/arm64
         push: ${{ env.PUSH }}
         tags: ${{ steps.tags_for_latest.outputs.tags }}
@@ -145,7 +150,6 @@ jobs:
           RUNTIME_IMAGE=ubuntu:jammy
           TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
         context: copier
-        load: false
         platforms: linux/amd64,linux/arm64
         push: ${{ env.PUSH }}
         tags: ${{ steps.slim_tag_list.outputs.list }}
@@ -153,7 +157,7 @@ jobs:
         cache-to: type=gha,mode=max
 
   push:
-    needs: build-latest
+    needs: build-archs
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
