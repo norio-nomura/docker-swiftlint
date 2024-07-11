@@ -16,6 +16,8 @@ on:
 
 env:
   CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
+  PUSH: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && 'true' || 'false' }}
+  SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.55.0' }}
 
 jobs:
 
@@ -26,17 +28,9 @@ jobs:
         include:
           - swift_version: 5.10.1
             swift_version_aliases: ["5", "5.10"]
-    env:
-      PUSH: false
-      SWIFTLINT_REVISION: 0.55.0
 
     steps:
     - uses: actions/checkout@v4
-
-    - if: github.event_name == 'create' && github.event.ref_type == 'tag'
-      run: |
-        echo "PUSH=true" >> $GITHUB_ENV
-        echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
 
     - id: tags_for_latest
       uses: ./.github/actions/tags_for_latest
@@ -172,9 +166,6 @@ jobs:
             swift_version_aliases: ["5.8"]
           - swift_version: '5.9.2'
             swift_version_aliases: ["5.9"]
-    env:
-      PUSH: false
-      SWIFTLINT_REVISION: 0.55.0
 
     steps:
     - uses: actions/checkout@v4
@@ -188,11 +179,6 @@ jobs:
       with:
         name: swiftlint_arm64
         path: copier
-
-    - if: github.event_name == 'create' && github.event.ref_type == 'tag'
-      run: |
-        echo "PUSH=true" >> $GITHUB_ENV
-        echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
 
     - id: tags_for_older
       uses: ./.github/actions/tags_for_older
