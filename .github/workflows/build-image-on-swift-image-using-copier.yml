@@ -1,0 +1,64 @@
+name: build image on swift image using copier
+
+on:
+  workflow_call:
+    inputs:
+      latest:
+        type: string
+      push:
+        required: true
+        type: string
+      repositories:
+        required: true
+        type: string
+      swift_version:
+        required: true
+        type: string
+      swift_version_aliases:
+        type: string
+      swiftlint_revision:
+        required: true
+        type: string
+    secrets:
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  build_tags:
+    name: build tags for swift-${{ inputs.swift_version }}
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - id: latest_tags
+      uses: ./.github/actions/tags_for_latest
+      with:
+        repositories: ${{ inputs.repositories }}
+        swift_version: ${{ toJSON(inputs.swift_version) }}
+        swift_version_aliases: ${{ inputs.swift_version_aliases }}
+        swiftlint_revision: ${{ toJSON(inputs.swiftlint_revision) }}
+
+    - id: older_tags
+      uses: ./.github/actions/tags_for_older
+      with:
+        repositories: ${{ inputs.repositories }}
+        swift_version: ${{ toJSON(inputs.swift_version) }}
+        swift_version_aliases: ${{ inputs.swift_version_aliases }}
+        swiftlint_revision: ${{ toJSON(inputs.swiftlint_revision) }}
+
+    - id: tags
+      run: echo "tags=${{ inputs.latest && steps.latest_tags.outputs.tags || steps.older_tags.outputs.tags }}" >> "$GITHUB_OUTPUT"
+
+  build_image_on_swift_image_using_copier:
+    name: Build image on swift-${{ inputs.swift_version }}
+    needs: build_tags
+    uses: ./.github/workflows/build-image-using-copier.yml
+    with:
+      image_name: swift-${{ inputs.swift_version }}
+      build-args: |
+          RUNTIME_IMAGE=swift:${{ inputs.swift_version }}-jammy
+      tags: ${{ needs.build_tags.outputs.tags }}
+      push: ${{ inputs.push }}
+    secrets: inherit

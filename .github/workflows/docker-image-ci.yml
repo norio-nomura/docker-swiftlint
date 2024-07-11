@@ -6,135 +6,81 @@ on:
     branches: [master]
     paths:
       - '.github/actions/*/action.yml'
-      - '.github/workflows/docker-image-ci.yml'
+      - '.github/workflows/*.yml'
       - '*/Dockerfile'
   pull_request:
     paths:
       - '.github/actions/*/action.yml'
-      - '.github/workflows/docker-image-ci.yml'
+      - '.github/workflows/*.yml'
       - '*/Dockerfile'
 
-env:
-  CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
-
 jobs:
-
-  build-latest:
+  build_swiftlint:
+    name: Build SwiftLint ${{ matrix.target_arch }} architecture
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - swift_version: 5.10.1
-            swift_version_aliases: ["5", "5.10"]
+        target_arch: ['amd64', 'arm64']
+
     env:
-      PUSH: false
-      SWIFTLINT_REVISION: 0.55.0
+      CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
+      SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.55.0' }}
+      TARGET_SWIFT_VERSION: '5.10.1'
+
+    outputs:
+      push: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && 'true' || 'false' }}
+      repositories: ${{ env.CONTAINER_REPOSITORIES }}
+      swift_version: ${{ env.TARGET_SWIFT_VERSION }}
+      swiftlint_revision: ${{ env.SWIFTLINT_REVISION }}
 
     steps:
     - uses: actions/checkout@v4
 
-    - if: github.event_name == 'create' && github.event.ref_type == 'tag'
-      run: |
-        echo "PUSH=true" >> $GITHUB_ENV
-        echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
-
-    - id: tags_for_latest
-      uses: ./.github/actions/tags_for_latest
-      with:
-        repositories: ${{ env.CONTAINER_REPOSITORIES }}
-        swift_version: ${{ toJSON(matrix.swift_version) }}
-        swift_version_aliases: ${{ toJSON(matrix.swift_version_aliases) }}
-        swiftlint_revision: ${{ toJSON(env.SWIFTLINT_REVISION) }}
-
-    - run: echo "${{ steps.tags_for_latest.outputs.tags }}"
-
     - uses: ./.github/actions/install_qemu_user_static_from_debian
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
-      with:
-        USE_CONTAINERD: true
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: norionomura
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: build amd64 architecture
+    - name: build ${{ matrix.target_arch }} architecture
       uses: docker/build-push-action@v5
       with:
         build-args: |
           BUILDER_IMAGE=swiftlang/swift:nightly-jammy
           FIX_SWIFTPM_7695=1
+          PREFER_BUILDARCH=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
+          TARGET_IMAGE=swift:${{ env.TARGET_SWIFT_VERSION }}-jammy
         context: builder
         load: true
-        platforms: linux/amd64
-        push: false
-        tags: swiftlint:amd64
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: build arm64 architecture
-      uses: docker/build-push-action@v5
-      with:
-        build-args: |
-          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
-          CROSS_TARGETARCHS=arm64
-          FIX_SWIFTPM_7695=1
-          SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
-        context: builder
-        load: true
-        platforms: linux/arm64
-        push: false
-        tags: swiftlint:arm64
+        platforms: linux/${{ matrix.target_arch }}
+        tags: swiftlint
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: archive
-      run: |
-        docker run swiftlint:amd64 archive-swiftlint-runtime > copier/swiftlint_linux_amd64.tar.gz
-        docker run swiftlint:arm64 archive-swiftlint-runtime > copier/swiftlint_linux_arm64.tar.gz
+      run: >
+        docker run --platform linux/${{ matrix.target_arch }} --rm swiftlint archive-swiftlint-runtime
+        > copier/swiftlint_linux_${{ matrix.target_arch }}.tar.gz
 
-    - name: upload amd64 artifact
+    - name: upload ${{ matrix.target_arch }} artifact
       uses: actions/upload-artifact@v4
       with:
-        name: swiftlint_amd64
-        path: copier/swiftlint_linux_amd64.tar.gz
+        name: swiftlint_${{ matrix.target_arch }}
+        path: copier/swiftlint_linux_${{ matrix.target_arch }}.tar.gz
 
-    - name: upload arm64 artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: swiftlint_arm64
-        path: copier/swiftlint_linux_arm64.tar.gz
-
-    - name: build multi-arch image
-      uses: docker/build-push-action@v5
-      with:
-        build-args: |
-          RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
-        context: copier
-        load: false
-        platforms: linux/amd64,linux/arm64
-        push: ${{ env.PUSH }}
-        tags: ${{ steps.tags_for_latest.outputs.tags }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+  build_slim_tags:
+    name: Build slim tags
+    needs: build_swiftlint
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.slim_tag_list.outputs.list }}
+    steps:
+    - uses: actions/checkout@v4
 
     - id: slim_tags
       uses: ./.github/actions/product
       with:
-        a: ${{ env.CONTAINER_REPOSITORIES }}
-        b: "[\"slim\", \"${{ env.SWIFTLINT_REVISION }}-slim\"]"
+        a: ${{ needs.build_swiftlint.outputs.repositories }}
+        b: "[\"slim\", \"${{ needs.build_swiftlint.outputs.swiftlint_revision }}-slim\"]"
         sep: '":"'
 
     - id: slim_tag_list
@@ -142,29 +88,26 @@ jobs:
       with:
         array: ${{ steps.slim_tags.outputs.product }}
 
-    - run: echo "${{ steps.slim_tag_list.outputs.list }}"
+  build_slim_image_using_copier:
+    name: Build slim image using copier
+    needs: [build_swiftlint, build_slim_tags]
+    uses: ./.github/workflows/build-image-using-copier.yml
+    with:
+      image_name: slim
+      build-args: |
+        RUNTIME_IMAGE=ubuntu:jammy
+        TARGET_IMAGE=swift:${{ needs.build_swiftlint.outputs.swift_version }}-jammy
+      tags: ${{ needs.build_slim_tags.outputs.tags }}
+      push: ${{ needs.build_swiftlint.outputs.push }}
+    secrets: inherit
 
-    - name: build slim image
-      uses: docker/build-push-action@v5
-      with:
-        build-args: |
-          RUNTIME_IMAGE=ubuntu:jammy
-          TARGET_IMAGE=swift:${{ matrix.swift_version }}-jammy
-        context: copier
-        load: false
-        platforms: linux/amd64,linux/arm64
-        push: ${{ env.PUSH }}
-        tags: ${{ steps.slim_tag_list.outputs.list }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  push:
-    needs: build-latest
-    runs-on: ubuntu-latest
+  build_images_on_swift_image:
+    name: Build image on swift-${{ matrix.swift_version }} image
+    needs: build_swiftlint
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0']
+        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1']
         include:
           - swift_version: '5.7.3'
             swift_version_aliases: ["5.7"]
@@ -172,64 +115,16 @@ jobs:
             swift_version_aliases: ["5.8"]
           - swift_version: '5.9.2'
             swift_version_aliases: ["5.9"]
-    env:
-      PUSH: false
-      SWIFTLINT_REVISION: 0.55.0
+          - swift_version: '5.10.1'
+            swift_version_aliases: ["5", "5.10"]
+            latest: 'true'
 
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/download-artifact@v4
-      with:
-        name: swiftlint_amd64
-        path: copier
-
-    - uses: actions/download-artifact@v4
-      with:
-        name: swiftlint_arm64
-        path: copier
-
-    - if: github.event_name == 'create' && github.event.ref_type == 'tag'
-      run: |
-        echo "PUSH=true" >> $GITHUB_ENV
-        echo "SWIFTLINT_REVISION=${{ github.event.ref }}" >> $GITHUB_ENV
-
-    - id: tags_for_older
-      uses: ./.github/actions/tags_for_older
-      with:
-        repositories: ${{ env.CONTAINER_REPOSITORIES }}
-        swift_version: ${{ toJSON(matrix.swift_version) }}
-        swift_version_aliases: ${{ toJSON(matrix.swift_version_aliases) }}
-        swiftlint_revision: ${{ toJSON(env.SWIFTLINT_REVISION) }}
-
-    - run: echo "${{ steps.tags_for_older.outputs.tags }}"
-
-    - uses: ./.github/actions/install_qemu_user_static_from_debian
-
-    - uses: ./.github/actions/configure-docker-containerd-image-store
-      with:
-        USE_CONTAINERD: true
-
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: norionomura
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - uses: docker/build-push-action@v5
-      with:
-        build-args: |
-          RUNTIME_IMAGE=swift:${{ matrix.swift_version }}-jammy
-        context: copier
-        platforms: linux/amd64,linux/arm64
-        push: ${{ env.PUSH }}
-        tags: ${{ steps.tags_for_older.outputs.tags }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+    uses: ./.github/workflows/build-image-on-swift-image-using-copier.yml
+    with:
+      latest: ${{ matrix.latest }}
+      push: ${{ needs.build_swiftlint.outputs.push }}
+      repositories: ${{ needs.build_swiftlint.outputs.repositories }}
+      swift_version: ${{ matrix.swift_version }}
+      swift_version_aliases: ${{ toJSON(matrix.swift_version_aliases) }}
+      swiftlint_revision: ${{ needs.build_swiftlint.outputs.swiftlint_revision }}
+    secrets: inherit
