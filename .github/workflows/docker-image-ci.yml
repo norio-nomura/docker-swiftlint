@@ -25,7 +25,7 @@ jobs:
     env:
       CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
       SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.57.0' }}
-      TARGET_SWIFT_VERSION: '5.10.1'
+      TARGET_SWIFT_VERSION: '6.0'
 
     outputs:
       push: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && 'true' || 'false' }}
@@ -107,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1']
+        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1', '6.0.0', '6.0.1', '6.0.2']
         include:
           - swift_version: '5.7.3'
             swift_version_aliases: ["5.7"]
@@ -117,6 +117,8 @@ jobs:
             swift_version_aliases: ["5.9"]
           - swift_version: '5.10.1'
             swift_version_aliases: ["5", "5.10"]
+          - swift_version: '6.0.2'
+            swift_version_aliases: ["6", "6.0"]
             latest: 'true'
 
     uses: ./.github/workflows/build-image-on-swift-image-using-copier.yml
