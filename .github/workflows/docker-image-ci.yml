@@ -44,7 +44,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         build-args: |
-          BUILDER_IMAGE=swiftlang/swift:nightly-jammy
+          BUILDER_IMAGE=swift:6.0-jammy
           FIX_SWIFTPM_7695=1
           PREFER_BUILDARCH=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
