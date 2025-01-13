@@ -8,7 +8,7 @@
 ARG IMAGE_SUFFIX
 
 # The image to use for building SwiftLint by using Swift SDK
-ARG BUILDER_IMAGE=swiftlang/swift:nightly${IMAGE_SUFFIX}
+ARG BUILDER_IMAGE=swift:6.0${IMAGE_SUFFIX}
 
 # The image to using Swift Toolchain for building SwiftLint
 ARG TARGET_IMAGE=swift:6.0${IMAGE_SUFFIX}
@@ -18,7 +18,7 @@ ARG TARGET_IMAGE=swift:6.0${IMAGE_SUFFIX}
 ARG RUNTIME_IMAGE=${TARGET_IMAGE}
 
 # The revision of SwiftLint to build.
-ARG SWIFTLINT_REVISION=0.57.0
+ARG SWIFTLINT_REVISION=0.58.0
 
 # If set, target will be built on BUILDARCH.
 ARG PREFER_BUILDARCH
