@@ -17,15 +17,15 @@ on:
 jobs:
   build_swiftlint:
     name: Build SwiftLint ${{ matrix.target_arch }} architecture
-    runs-on: ubuntu-latest
+    runs-on: ${{ endsWith(matrix.target_arch, 'arm64') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     strategy:
       matrix:
         target_arch: ['amd64', 'arm64']
 
     env:
       CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
-      SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.58.0' }}
-      TARGET_SWIFT_VERSION: '6.0'
+      SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.59.0' }}
+      TARGET_SWIFT_VERSION: '6.1'
 
     outputs:
       push: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && 'true' || 'false' }}
@@ -36,15 +36,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: ./.github/actions/install_qemu_user_static_from_debian
-
     - uses: ./.github/actions/configure-docker-containerd-image-store
 
+    - uses: docker/setup-buildx-action@v3
+      with:
+        version: latest
+
     - name: build ${{ matrix.target_arch }} architecture
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         build-args: |
-          BUILDER_IMAGE=swift:6.0-jammy
+          BUILDER_IMAGE=swift:6.1-jammy
           FIX_SWIFTPM_7695=1
           PREFER_BUILDARCH=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
@@ -107,10 +109,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.7.0', '5.7.1', '5.7.2', '5.7.3', '5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1', '6.0.0', '6.0.1', '6.0.2', '6.0.3']
+        swift_version: ['5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1', '6.0.0', '6.0.1', '6.0.2', '6.0.3', '6.1.0']
         include:
-          - swift_version: '5.7.3'
-            swift_version_aliases: ["5.7"]
           - swift_version: '5.8.1'
             swift_version_aliases: ["5.8"]
           - swift_version: '5.9.2'
@@ -118,7 +118,9 @@ jobs:
           - swift_version: '5.10.1'
             swift_version_aliases: ["5", "5.10"]
           - swift_version: '6.0.3'
-            swift_version_aliases: ["6", "6.0"]
+            swift_version_aliases: ["6.0"]
+          - swift_version: '6.1.0'
+            swift_version_aliases: ["6", "6.1"]
             latest: 'true'
 
     uses: ./.github/workflows/build-image-on-swift-image-using-copier.yml

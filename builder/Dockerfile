@@ -8,17 +8,17 @@
 ARG IMAGE_SUFFIX
 
 # The image to use for building SwiftLint by using Swift SDK
-ARG BUILDER_IMAGE=swift:6.0${IMAGE_SUFFIX}
+ARG BUILDER_IMAGE=swift:6.1${IMAGE_SUFFIX}
 
 # The image to using Swift Toolchain for building SwiftLint
-ARG TARGET_IMAGE=swift:6.0${IMAGE_SUFFIX}
+ARG TARGET_IMAGE=swift:6.1${IMAGE_SUFFIX}
 
 # The image to running SwiftLint. If image does not contain Swift runtime libraries,
 #              the libraries will be copied from the target image.
 ARG RUNTIME_IMAGE=${TARGET_IMAGE}
 
 # The revision of SwiftLint to build.
-ARG SWIFTLINT_REVISION=0.58.0
+ARG SWIFTLINT_REVISION=0.59.0
 
 # If set, target will be built on BUILDARCH.
 ARG PREFER_BUILDARCH
@@ -357,13 +357,20 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=${APT_CACHE_ID} \
     libxml2
 COPY --link --from=builder /usr/bin/swiftlint /usr/bin/
 # Copy Swift runtime libraries if not exists
-RUN --mount=type=bind,target=/runtime,from=runtime \
-    sourcekit=/usr/lib/libsourcekitdInProc.so && \
-        test -f $sourcekit || cp -pv /runtime$sourcekit $(dirname $sourcekit) && \
-    swift_host=/usr/lib/swift/host && \
-        test -d $swift_host || ( mkdir -p $swift_host && cp -pRv /runtime$swift_host/libSwift*.so $swift_host/ ) && \
-    swift_linux=/usr/lib/swift/linux && \
-        test -d $swift_linux || ( mkdir -p $swift_linux && cp -pRv /runtime$swift_linux/*.so $swift_linux/ )
+RUN --mount=type=bind,target=/runtime,from=runtime <<'EOT'
+#!/bin/bash -eu
+    sourcekit=/usr/lib/libsourcekitdInProc.so
+    test -f "${sourcekit}" && exit # assume that the libraries exist
+    dependencies_txt=$(realpath $(ldd "/runtime${sourcekit}" | awk '/=>/ && $3~/\/lib\/swift/{print $3}'))
+    dependencies=()
+    while read -r line; do dependencies+=("$line"); done <<< "${dependencies_txt}"
+    for dependency in "${dependencies[@]}"; do
+        dirname=$(dirname "${dependency}")
+        test -d "${dirname#/runtime}" || mkdir -p "${dirname#/runtime}"
+        cp -pv "${dependency}" "${dirname#/runtime}"
+    done
+    cp -pv /runtime$sourcekit $(dirname $sourcekit)
+EOT
 COPY --chmod=755 <<'EOT' /usr/local/bin/swiftlint
 #!/bin/bash
 swiftlint=/usr/bin/swiftlint
@@ -388,10 +395,10 @@ fi
 EOT
 COPY --chmod=755 <<"EOT" /usr/local/bin/archive-swiftlint-runtime
 #!/bin/bash -eux
-tar czO \
-    /usr/bin/swiftlint \
-    /usr/local/bin/swiftlint \
-    /usr/local/bin/archive-swiftlint-runtime
+tar czO -C / \
+    usr/bin/swiftlint \
+    usr/local/bin/swiftlint \
+    usr/local/bin/archive-swiftlint-runtime
 EOT
 
 # Print Installed SwiftLint Version

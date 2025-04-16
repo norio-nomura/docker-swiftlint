@@ -21,13 +21,20 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-${RUNTIME_IMA
     apt-get update && apt-get install -y \
     libcurl4 \
     libxml2
-RUN --mount=type=bind,target=/runtime,from=runtime \
-    sourcekit=/usr/lib/libsourcekitdInProc.so && \
-        test -f $sourcekit || cp -pv /runtime$sourcekit $(dirname $sourcekit) && \
-    swift_host=/usr/lib/swift/host && \
-        test -d $swift_host || ( mkdir -p $swift_host && cp -pRv /runtime$swift_host/libSwift*.so $swift_host/ ) && \
-    swift_linux=/usr/lib/swift/linux && \
-        test -d $swift_linux || ( mkdir -p $swift_linux && cp -pRv /runtime$swift_linux/*.so $swift_linux/ )
+RUN --mount=type=bind,target=/runtime,from=runtime <<'EOT'
+#!/bin/bash -eu
+    sourcekit=/usr/lib/libsourcekitdInProc.so
+    test -f "${sourcekit}" && exit # assume that the libraries exist
+    dependencies_txt=$(realpath $(ldd "/runtime${sourcekit}" | awk '/=>/ && $3~/\/lib\/swift/{print $3}'))
+    dependencies=()
+    while read -r line; do dependencies+=("$line"); done <<< "${dependencies_txt}"
+    for dependency in "${dependencies[@]}"; do
+        dirname=$(dirname "${dependency}")
+        test -d "${dirname#/runtime}" || mkdir -p "${dirname#/runtime}"
+        cp -pv "${dependency}" "${dirname#/runtime}"
+    done
+    cp -pv /runtime$sourcekit $(dirname $sourcekit)
+EOT
 ARG TARGETARCH
 ADD swiftlint_linux_${TARGETARCH}.tar.gz /
 
