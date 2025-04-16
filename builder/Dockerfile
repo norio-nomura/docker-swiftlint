@@ -395,10 +395,10 @@ fi
 EOT
 COPY --chmod=755 <<"EOT" /usr/local/bin/archive-swiftlint-runtime
 #!/bin/bash -eux
-tar czO \
-    /usr/bin/swiftlint \
-    /usr/local/bin/swiftlint \
-    /usr/local/bin/archive-swiftlint-runtime
+tar czO -C / \
+    usr/bin/swiftlint \
+    usr/local/bin/swiftlint \
+    usr/local/bin/archive-swiftlint-runtime
 EOT
 
 # Print Installed SwiftLint Version
