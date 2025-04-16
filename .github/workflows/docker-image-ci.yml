@@ -17,7 +17,7 @@ on:
 jobs:
   build_swiftlint:
     name: Build SwiftLint ${{ matrix.target_arch }} architecture
-    runs-on: ubuntu-latest
+    runs-on: ${{ endsWith(matrix.target_arch, 'arm64') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     strategy:
       matrix:
         target_arch: ['amd64', 'arm64']
@@ -35,8 +35,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
-    - uses: ./.github/actions/install_qemu_user_static_from_debian
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
 
