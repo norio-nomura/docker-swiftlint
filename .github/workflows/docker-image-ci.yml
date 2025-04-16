@@ -25,7 +25,7 @@ jobs:
     env:
       CONTAINER_REPOSITORIES: '["norionomura/swiftlint", "ghcr.io/norio-nomura/swiftlint"]'
       SWIFTLINT_REVISION: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && github.event.ref || '0.58.0' }}
-      TARGET_SWIFT_VERSION: '6.0'
+      TARGET_SWIFT_VERSION: '6.1'
 
     outputs:
       push: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' && 'true' || 'false' }}
@@ -44,7 +44,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         build-args: |
-          BUILDER_IMAGE=swift:6.0-jammy
+          BUILDER_IMAGE=swift:6.1-jammy
           FIX_SWIFTPM_7695=1
           PREFER_BUILDARCH=1
           SWIFTLINT_REVISION=${{ env.SWIFTLINT_REVISION }}
