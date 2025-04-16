@@ -38,8 +38,12 @@ jobs:
 
     - uses: ./.github/actions/configure-docker-containerd-image-store
 
+    - uses: docker/setup-buildx-action@v3
+      with:
+        version: latest
+
     - name: build ${{ matrix.target_arch }} architecture
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         build-args: |
           BUILDER_IMAGE=swift:6.1-jammy
