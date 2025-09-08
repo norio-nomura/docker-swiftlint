@@ -109,7 +109,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift_version: ['5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1', '6.0.0', '6.0.1', '6.0.2', '6.0.3', '6.1.0', '6.1.1', '6.1.2']
+        swift_version: ['5.8.0', '5.8.1', '5.9.0', '5.9.1', '5.9.2', '5.10.0', '5.10.1', '6.0.0', '6.0.1', '6.0.2', '6.0.3', '6.1.0', '6.1.1', '6.1.2', '6.1.3']
         include:
           - swift_version: '5.8.1'
             swift_version_aliases: ["5.8"]
@@ -119,7 +119,7 @@ jobs:
             swift_version_aliases: ["5", "5.10"]
           - swift_version: '6.0.3'
             swift_version_aliases: ["6.0"]
-          - swift_version: '6.1.2'
+          - swift_version: '6.1.3'
             swift_version_aliases: ["6", "6.1"]
             latest: 'true'
 
