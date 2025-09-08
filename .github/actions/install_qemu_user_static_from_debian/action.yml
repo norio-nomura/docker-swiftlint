@@ -18,7 +18,7 @@ runs:
 
         # install debian-archive-keyring
         keyring=/etc/apt/keyrings/debian-archive-keyring.gpg
-        [ -f $keyring ] || curl https://ftp-master.debian.org/keys/archive-key-11.asc -o - | sudo gpg --dearmor -o $keyring
+        [ -f $keyring ] || curl https://ftp-master.debian.org/keys/archive-key-12.asc -o - | sudo gpg --dearmor -o $keyring
 
         # add debian sources
         debian_sources=/etc/apt/sources.list.d/debian-$TARGET_RELEASE.sources
