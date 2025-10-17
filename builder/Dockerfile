@@ -8,10 +8,10 @@
 ARG IMAGE_SUFFIX
 
 # The image to use for building SwiftLint by using Swift SDK
-ARG BUILDER_IMAGE=swift:6.1${IMAGE_SUFFIX}
+ARG BUILDER_IMAGE=swift:6.2${IMAGE_SUFFIX}
 
 # The image to using Swift Toolchain for building SwiftLint
-ARG TARGET_IMAGE=swift:6.1${IMAGE_SUFFIX}
+ARG TARGET_IMAGE=swift:6.2${IMAGE_SUFFIX}
 
 # The image to running SwiftLint. If image does not contain Swift runtime libraries,
 #              the libraries will be copied from the target image.
